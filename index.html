@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<!-- saved from url=(0056)file:///D:/Documents/Downloads/english_level_test_1.html -->
+<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Level Check — @alexeyzur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./index_files/css2" rel="stylesheet">
+<style>
+  :root{
+    --ink:#171717;
+    --yellow:#F2C230;
+    --paper:#FFFFFF;
+    --paper-soft:#F7F6F1;
+    --line:#E4E1D8;
+    --muted:#6E6C63;
+    --good:#2E6B4F;
+    --bad:#B23A34;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper-soft);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+  }
+  .topbar{
+    background:var(--ink);
+    height:46px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 18px;
+  }
+  .topbar .brand{color:var(--yellow);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;letter-spacing:0.02em;}
+  .topbar a{color:var(--yellow);text-decoration:none;font-size:13px;font-family:'IBM Plex Mono',monospace;opacity:0.9;}
+  .topbar a:hover{opacity:1;text-decoration:underline;}
+
+  .app{
+    display:grid;
+    grid-template-columns:120px minmax(0,1fr);
+    max-width:920px;
+    margin:0 auto;
+    padding:36px 20px 60px;
+    gap:24px;
+    align-items:start;
+  }
+  @media (max-width:720px){
+    .app{grid-template-columns:1fr;padding:20px 14px 48px;}
+  }
+
+  /* --- CEFR ladder rail --- */
+  .ladder{
+    position:sticky;
+    top:36px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  @media (max-width:720px){
+    .ladder{
+      position:static;
+      flex-direction:row;
+      justify-content:space-between;
+      margin-bottom:6px;
+    }
+  }
+  .rung{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 10px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    transition:background 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  }
+  @media (max-width:720px){
+    .rung{padding:5px 7px;font-size:10px;gap:4px;flex:1;justify-content:center;}
+  }
+  .rung .dot{width:6px;height:6px;border-radius:50%;background:var(--line);flex:none;}
+  .rung.passed{border-color:var(--ink);color:var(--ink);}
+  .rung.passed .dot{background:var(--ink);}
+  .rung.current{
+    background:var(--yellow);
+    border-color:var(--yellow);
+    color:var(--ink);
+    font-weight:600;
+    transform:scale(1.04);
+  }
+  .rung.current .dot{background:var(--ink);}
+  @media (prefers-reduced-motion:reduce){
+    .rung{transition:none;}
+  }
+
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:32px;
+  }
+  @media (max-width:720px){ .card{padding:22px;} }
+
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:30px;
+    line-height:1.2;
+    margin:0 0 12px;
+  }
+  p{line-height:1.55;color:var(--ink);}
+  .muted{color:var(--muted);font-size:14px;}
+
+  label{display:block;font-size:13px;font-weight:600;margin:16px 0 6px;}
+  input[type=text], input[type=email]{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    background:var(--paper-soft);
+    color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--ink);outline-offset:1px;}
+
+  button{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    border:none;
+    border-radius:9px;
+    padding:13px 22px;
+    cursor:pointer;
+    transition:transform 0.12s ease, opacity 0.12s ease;
+  }
+  button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  button:active{transform:scale(0.98);}
+  .btn-primary{background:var(--ink);color:var(--yellow);}
+  .btn-primary:hover{opacity:0.9;}
+  .btn-primary:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--ink);}
+
+  .progress-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:18px;
+  }
+
+  .question{
+    font-size:19px;
+    line-height:1.5;
+    margin:0 0 22px;
+    font-weight:500;
+  }
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .option{
+    text-align:left;
+    background:var(--paper-soft);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:13px 16px;
+    font-size:15px;
+    color:var(--ink);
+    cursor:pointer;
+    font-weight:500;
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  .option:hover{border-color:var(--ink);}
+  .option.selected{border-color:var(--ink);background:#FBF0CE;}
+
+  /* result screen */
+  .level-hero{
+    display:flex;
+    align-items:baseline;
+    gap:18px;
+    margin-bottom:6px;
+  }
+  .level-letter{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:96px;
+    line-height:1;
+    color:var(--ink);
+    background:linear-gradient(180deg, var(--yellow) 62%, transparent 62%);
+    padding:0 6px;
+  }
+  @media (max-width:720px){ .level-letter{font-size:64px;} }
+  .level-desc{font-size:16px;max-width:340px;}
+  .score-row{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    margin:14px 0 26px;
+  }
+  .mistake{
+    border-top:1px solid var(--line);
+    padding:16px 0;
+  }
+  .mistake:first-of-type{border-top:1px solid var(--line);margin-top:8px;}
+  .mistake .q{font-weight:600;margin-bottom:8px;}
+  .mistake .row{font-size:14px;margin:3px 0;}
+  .mistake .wrong{color:var(--bad);text-decoration:line-through;}
+  .mistake .right{color:var(--good);font-weight:600;}
+  .mistake .explain{color:var(--muted);font-size:13.5px;margin-top:6px;}
+
+  .status-banner{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:#EAF3EC;
+    color:var(--good);
+    border-radius:8px;
+    padding:8px 12px;
+    font-size:13.5px;
+    margin-bottom:22px;
+  }
+
+  /* admin table */
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{
+    text-align:left;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--muted);
+    border-bottom:1px solid var(--line);
+    padding:8px 10px;
+  }
+  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  .pill{
+    display:inline-block;
+    background:var(--yellow);
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    border-radius:20px;
+    padding:2px 10px;
+  }
+  .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;}
+  .del-btn:hover{color:var(--bad);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">alexeyzur</span>
+  <a href="https://t.me/alexeyzur" target="_blank" rel="noopener">t.me/alexeyzur ↗</a>
+</div>
+
+<div class="app">
+  <div class="ladder" id="ladder"><div class="rung"><span class="dot"></span>C2</div><div class="rung"><span class="dot"></span>C1</div><div class="rung"><span class="dot"></span>B2</div><div class="rung"><span class="dot"></span>B1</div><div class="rung"><span class="dot"></span>A2</div><div class="rung"><span class="dot"></span>A1</div></div>
+  <div id="content">
+    <div class="card">
+      <h1>English Level Check</h1>
+      <p>Тест на грамматику, лексику, фразовые глаголы, предлоги и идиомы — от A1 до C2, 40 вопросов, 10–12 минут. Вопросы идут по порядку — от простых к сложным.</p>
+      <p class="muted">Результат виден только твоему преподавателю.</p>
+      <label for="nameInput">Имя</label>
+      <input type="text" id="nameInput" placeholder="Как тебя зовут?">
+      <label for="emailInput">Email</label>
+      <input type="email" id="emailInput" placeholder="you@example.com">
+      <div style="margin-top:22px;">
+        <button class="btn-primary" id="startBtn">Начать тест</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Question bank: 6 per CEFR level ---------- */
+const LEVELS = ["A1","A2","B1","B2","C1","C2"];
+const LEVEL_DESC = {
+  A1:"Начальный уровень: базовые фразы, простые предложения о себе и повседневных вещах.",
+  A2:"Элементарный уровень: несложное общение на знакомые бытовые темы.",
+  B1:"Средний уровень: уверенное общение на знакомые темы, понимание основной идеи текста.",
+  B2:"Выше среднего: свободное обсуждение сложных тем, хорошее владение грамматикой.",
+  C1:"Продвинутый уровень: гибкое и точное использование языка в разных ситуациях.",
+  C2:"Уровень носителя: свободное и естественное владение языком практически без ограничений."
+};
+
+const LEVEL_COUNTS = {A1:6, A2:6, B1:7, B2:7, C1:7, C2:7}; // sums to 40
+const TOTAL_QUESTIONS = Object.values(LEVEL_COUNTS).reduce((s,n)=>s+n,0);
+
+const BANK = [
+  // A1 (6): grammar x3, vocab x3
+  {level:"A1",type:"grammar",q:"She ___ a teacher.",opts:["is","are","am","be"],a:0,exp:"С he/she/it используется 'is'."},
+  {level:"A1",type:"grammar",q:"I have ___ apple.",opts:["a","an","the","—"],a:1,exp:"Перед гласным звуком используется 'an'."},
+  {level:"A1",type:"grammar",q:"He usually ___ to work by bus.",opts:["go","goes","going","gone"],a:1,exp:"В Present Simple с he/she/it глагол получает -s: goes."},
+  {level:"A1",type:"vocab",q:"The opposite of 'big' is ___.",opts:["small","large","tall","wide"],a:0,exp:"'Small' — противоположность 'big'."},
+  {level:"A1",type:"vocab",q:"A place where you buy food is a ___.",opts:["supermarket","hospital","library","airport"],a:0,exp:"'Supermarket' — магазин, где покупают продукты."},
+  {level:"A1",type:"vocab",q:"The opposite of 'hot' is ___.",opts:["cold","warm","wet","dry"],a:0,exp:"'Cold' — противоположность 'hot'."},
+
+  // A2 (6): grammar x2, vocab x2, phrasal x2
+  {level:"A2",type:"grammar",q:"Yesterday I ___ to the cinema.",opts:["go","went","goes","gone"],a:1,exp:"Past Simple от 'go' — неправильная форма 'went'."},
+  {level:"A2",type:"grammar",q:"She is ___ than her sister.",opts:["tall","taller","tallest","more tall"],a:1,exp:"Сравнительная степень короткого прилагательного: -er."},
+  {level:"A2",type:"vocab",q:"The opposite of 'expensive' is ___.",opts:["cheap","costly","pricey","rich"],a:0,exp:"'Cheap' — противоположность 'expensive'."},
+  {level:"A2",type:"vocab",q:"If you are ___, you want to eat.",opts:["hungry","thirsty","tired","bored"],a:0,exp:"'Hungry' — голодный, хочется есть."},
+  {level:"A2",type:"phrasal",q:"Please ___ your shoes before you come in.",opts:["take off","take away","take up","take over"],a:0,exp:"'Take off' — снять (одежду, обувь)."},
+  {level:"A2",type:"phrasal",q:"Can you ___ the TV? I can't hear it.",opts:["turn up","turn off","turn down","turn over"],a:0,exp:"'Turn up' — сделать громче."},
+
+  // B1 (7): grammar1, vocab1, prep2, phrasal2, idiom1
+  {level:"B1",type:"grammar",q:"By the time we arrived, the film ___ already started.",opts:["has","had","have","was"],a:1,exp:"Past Perfect: действие, завершившееся до другого действия в прошлом."},
+  {level:"B1",type:"vocab",q:"'Reliable' means ___.",opts:["trustworthy","expensive","boring","fast"],a:0,exp:"'Reliable' — надёжный, заслуживающий доверия."},
+  {level:"B1",type:"prep",q:"She's really good ___ maths.",opts:["at","in","on","for"],a:0,exp:"Устойчивое сочетание: good at something."},
+  {level:"B1",type:"prep",q:"I'm looking forward ___ the weekend.",opts:["to","for","at","on"],a:0,exp:"Устойчивое сочетание: look forward to something."},
+  {level:"B1",type:"phrasal",q:"I need to ___ this form before Friday.",opts:["fill in","fill up","fill on","fill at"],a:0,exp:"'Fill in' — заполнить (форму, документ)."},
+  {level:"B1",type:"phrasal",q:"They had to ___ the meeting because of the storm.",opts:["put off","put on","put up","put down"],a:0,exp:"'Put off' — отложить, перенести."},
+  {level:"B1",type:"idiom",q:"'To hit the books' means ___.",opts:["to study hard","to buy books","to read for fun","to write a book"],a:0,exp:"'Hit the books' — усердно заниматься, готовиться к экзамену."},
+
+  // B2 (7): grammar1, vocab1, prep1, phrasal2, idiom2
+  {level:"B2",type:"grammar",q:"If I ___ known about the traffic, I would have left earlier.",opts:["had","have","would","was"],a:0,exp:"Third Conditional: If + Past Perfect, would have + V3."},
+  {level:"B2",type:"vocab",q:"'Reluctant' is closest in meaning to ___.",opts:["unwilling","eager","exhausted","curious"],a:0,exp:"'Reluctant' — неохотно делающий что-либо, нежелающий."},
+  {level:"B2",type:"prep",q:"He's not very interested ___ politics.",opts:["in","at","on","for"],a:0,exp:"Устойчивое сочетание: interested in something."},
+  {level:"B2",type:"phrasal",q:"The company had to ___ down after years of losses.",opts:["shut","close","turn","put"],a:0,exp:"'Shut down' — закрыться (о бизнесе)."},
+  {level:"B2",type:"phrasal",q:"She finally ___ up smoking last year.",opts:["gave","took","put","set"],a:0,exp:"'Give up' — бросить (привычку)."},
+  {level:"B2",type:"idiom",q:"'To be under the weather' means ___.",opts:["to feel unwell","to be very busy","to be angry","to be late"],a:0,exp:"'Under the weather' — неважно себя чувствовать."},
+  {level:"B2",type:"idiom",q:"'To cost an arm and a leg' means ___.",opts:["to be very expensive","to be very cheap","to take a long time","to be very easy"],a:0,exp:"'Cost an arm and a leg' — стоить очень дорого."},
+
+  // C1 (7): grammar1, vocab1, prep1, phrasal1, idiom3
+  {level:"C1",type:"grammar",q:"Not only ___ late, but he also forgot the documents.",opts:["did he arrive","he arrived","he did arrive","arrived he"],a:0,exp:"После 'not only' в начале предложения — инверсия."},
+  {level:"C1",type:"vocab",q:"'Meticulous' means ___.",opts:["extremely careful","very lazy","quite fast","somewhat rude"],a:0,exp:"'Meticulous' — очень тщательный, скрупулёзный."},
+  {level:"C1",type:"prep",q:"The results are consistent ___ our expectations.",opts:["with","to","at","for"],a:0,exp:"Устойчивое сочетание: consistent with something."},
+  {level:"C1",type:"phrasal",q:"The negotiations finally ___ down after months of talks.",opts:["broke","fell","gave","took"],a:0,exp:"'Break down' — сорваться, потерпеть неудачу (о переговорах)."},
+  {level:"C1",type:"idiom",q:"'To read between the lines' means ___.",opts:["to understand hidden meaning","to read very quickly","to skip parts of a text","to read aloud"],a:0,exp:"'Read between the lines' — понимать скрытый смысл."},
+  {level:"C1",type:"idiom",q:"'To be a blessing in disguise' means ___.",opts:["something bad that turns out good","something good that turns out bad","a lucky coincidence","a religious ceremony"],a:0,exp:"'A blessing in disguise' — то, что казалось плохим, но обернулось благом."},
+  {level:"C1",type:"idiom",q:"'To bite the bullet' means ___.",opts:["to face a difficult situation bravely","to avoid a problem","to eat quickly","to lose your temper"],a:0,exp:"'Bite the bullet' — стойко принять неизбежное трудное решение."},
+
+  // C2 (7): grammar1, vocab1, prep1, phrasal1, idiom3
+  {level:"C2",type:"grammar",q:"Rarely ___ such a compelling argument.",opts:["have I heard","I have heard","did I hear","I heard"],a:0,exp:"После наречия 'rarely' в начале предложения — инверсия."},
+  {level:"C2",type:"vocab",q:"'Ubiquitous' means ___.",opts:["present everywhere","rare","dangerous","temporary"],a:0,exp:"'Ubiquitous' — вездесущий, повсеместно встречающийся."},
+  {level:"C2",type:"prep",q:"She was oblivious ___ the danger around her.",opts:["to","of","at","with"],a:0,exp:"Устойчивое сочетание: oblivious to something."},
+  {level:"C2",type:"phrasal",q:"He tends to ___ on minor mistakes and never lets them go.",opts:["dwell","stay","hold","keep"],a:0,exp:"'Dwell on' — зацикливаться на чём-то."},
+  {level:"C2",type:"idiom",q:"'To be at the end of one's tether' means ___.",opts:["to have no patience left","to be very relaxed","to be very rich","to travel a lot"],a:0,exp:"'At the end of one's tether' — на пределе терпения."},
+  {level:"C2",type:"idiom",q:"'To throw caution to the wind' means ___.",opts:["to take a big risk","to be very cautious","to give up","to ask for advice"],a:0,exp:"'Throw caution to the wind' — пойти на большой риск."},
+  {level:"C2",type:"idiom",q:"'To have a chip on one's shoulder' means ___.",opts:["to feel resentful about something","to be very cheerful","to be extremely wealthy","to be forgetful"],a:0,exp:"'Have a chip on one's shoulder' — затаить обиду, быть в претензии."}
+];
+
+/* ---------- State ---------- */
+let state = {
+  screen: "start", // start | quiz | result | admin
+  name: "",
+  email: "",
+  testOrder: [],  // fixed 30-question sequence, simple to complex
+  answers: [],    // {q, chosenIdx, correct}
+  qIndex: 0,
+  selectedOpt: null
+};
+
+const contentEl = document.getElementById("content");
+const ladderEl = document.getElementById("ladder");
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// Build the fixed test once: strictly ordered A1 -> C2, options shuffled per question
+function generateTest(){
+  const order = [];
+  LEVELS.forEach(lvl=>{
+    const levelQs = BANK.filter(x=>x.level===lvl);
+    const block = shuffle(levelQs).map(q=>{
+      const optOrder = shuffle(q.opts.map((o,i)=>i));
+      return {
+        level:q.level, type:q.type, q:q.q, exp:q.exp,
+        opts: optOrder.map(i=>q.opts[i]),
+        a: optOrder.indexOf(q.a)
+      };
+    });
+    order.push(...block);
+  });
+  return order;
+}
+
+// cumulative start index of each level in the fixed 40-question sequence
+function levelStart(idx){
+  let s = 0;
+  for(let i=0;i<idx;i++) s += LEVEL_COUNTS[LEVELS[i]];
+  return s;
+}
+
+function currentLevelIdx(){
+  let acc = 0;
+  for(let i=0;i<LEVELS.length;i++){
+    acc += LEVEL_COUNTS[LEVELS[i]];
+    if(state.qIndex < acc) return i;
+  }
+  return 5;
+}
+
+function renderLadder(){
+  ladderEl.innerHTML = "";
+  const showCurrent = state.screen==="quiz" || state.screen==="result";
+  const curIdx = state.screen==="result"
+    ? LEVELS.indexOf(state.finalLevel)
+    : currentLevelIdx();
+  LEVELS.slice().reverse().forEach(lvl=>{
+    const idx = LEVELS.indexOf(lvl);
+    const div = document.createElement("div");
+    div.className = "rung";
+    if(showCurrent && idx === curIdx) div.className += " current";
+    else if(showCurrent && idx < curIdx) div.className += " passed";
+    div.innerHTML = `<span class="dot"></span>${lvl}`;
+    ladderEl.appendChild(div);
+  });
+}
+
+function renderStart(){
+  contentEl.innerHTML = `
+    <div class="card">
+      <h1>English Level Check</h1>
+      <p>Тест на грамматику, лексику, фразовые глаголы, предлоги и идиомы — от A1 до C2, ${TOTAL_QUESTIONS} вопросов, 10–12 минут. Вопросы идут по порядку — от простых к сложным.</p>
+      <p class="muted">Результат виден только твоему преподавателю.</p>
+      <label for="nameInput">Имя</label>
+      <input type="text" id="nameInput" placeholder="Как тебя зовут?">
+      <label for="emailInput">Email</label>
+      <input type="email" id="emailInput" placeholder="you@example.com">
+      <div style="margin-top:22px;">
+        <button class="btn-primary" id="startBtn">Начать тест</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("startBtn").onclick = ()=>{
+    const name = document.getElementById("nameInput").value.trim();
+    const email = document.getElementById("emailInput").value.trim();
+    if(!name || !email || !email.includes("@")){
+      alert("Пожалуйста, укажи имя и корректный email.");
+      return;
+    }
+    state.name = name;
+    state.email = email;
+    state.testOrder = generateTest();
+    state.qIndex = 0;
+    state.answers = [];
+    state.screen = "quiz";
+    nextQuestion();
+  };
+}
+
+function nextQuestion(){
+  if(state.qIndex >= TOTAL_QUESTIONS){
+    finishQuiz();
+    return;
+  }
+  state.currentQ = state.testOrder[state.qIndex];
+  state.selectedOpt = null;
+  render();
+}
+
+function renderQuiz(){
+  const q = state.currentQ;
+  contentEl.innerHTML = `
+    <div class="card">
+      <div class="progress-label">ВОПРОС ${state.qIndex+1} / ${TOTAL_QUESTIONS}</div>
+      <div class="question">${q.q}</div>
+      <div class="options" id="optsWrap">
+        ${q.opts.map((o,i)=>`<button class="option" data-i="${i}">${o}</button>`).join("")}
+      </div>
+      <div style="margin-top:24px;display:flex;justify-content:flex-end;">
+        <button class="btn-primary" id="nextBtn" disabled>Ответить</button>
+      </div>
+    </div>
+  `;
+  const opts = contentEl.querySelectorAll(".option");
+  const nextBtn = document.getElementById("nextBtn");
+  opts.forEach(btn=>{
+    btn.onclick = ()=>{
+      opts.forEach(b=>b.classList.remove("selected"));
+      btn.classList.add("selected");
+      state.selectedOpt = parseInt(btn.dataset.i);
+      nextBtn.disabled = false;
+    };
+  });
+  nextBtn.onclick = ()=>{
+    const correct = state.selectedOpt === q.a;
+    state.answers.push({q, chosenIdx: state.selectedOpt, correct});
+    state.qIndex++;
+    nextQuestion();
+  };
+}
+
+// Walk level-by-level from A1; a level "passes" at >=60% correct.
+// Final level = highest consecutively-passed level, starting from the bottom.
+function computeFinalLevel(){
+  let final = "A1";
+  const perLevel = {};
+  for(let i=0;i<LEVELS.length;i++){
+    const lvl = LEVELS[i];
+    const start = levelStart(i);
+    const count = LEVEL_COUNTS[lvl];
+    const slice = state.answers.slice(start, start+count);
+    const correct = slice.filter(a=>a.correct).length;
+    const acc = slice.length ? correct/slice.length : 0;
+    perLevel[lvl] = {correct, total: slice.length, acc};
+    if(acc >= 0.6){
+      final = lvl;
+    } else {
+      break; // stop climbing further once a level isn't passed
+    }
+  }
+  return {final, perLevel};
+}
+
+async function finishQuiz(){
+  const {final, perLevel} = computeFinalLevel();
+  state.finalLevel = final;
+  state.perLevel = perLevel;
+  state.screen = "result";
+  render();
+  // save to shared storage for teacher dashboard
+  try{
+    const correctCount = state.answers.filter(a=>a.correct).length;
+    const record = {
+      name: state.name,
+      email: state.email,
+      level: final,
+      score: `${correctCount}/${state.answers.length}`,
+      perLevel,
+      timestamp: new Date().toISOString(),
+      mistakes: state.answers.filter(a=>!a.correct).map(a=>({
+        q:a.q.q, chosen:a.q.opts[a.chosenIdx], correct:a.q.opts[a.q.a]
+      }))
+    };
+    const key = `result:${Date.now()}_${state.email.replace(/[^a-zA-Z0-9]/g,"")}`;
+    await window.storage.set(key, JSON.stringify(record), true);
+    state.saved = true;
+  }catch(e){
+    state.saved = false;
+    console.error("Save error:", e);
+  }
+  render();
+}
+
+function renderResult(){
+  const correctCount = state.answers.filter(a=>a.correct).length;
+  const level = state.finalLevel;
+  const mistakes = state.answers.filter(a=>!a.correct);
+  const breakdownRows = LEVELS.map(lvl=>{
+    const d = state.perLevel[lvl];
+    if(!d || d.total===0) return "";
+    const passed = d.acc >= 0.6;
+    return `<div class="row" style="display:flex;justify-content:space-between;max-width:280px;">
+      <span>${lvl}</span>
+      <span style="color:${passed?'var(--good)':'var(--bad)'};font-family:'IBM Plex Mono',monospace;">${d.correct}/${d.total}</span>
+    </div>`;
+  }).join("");
+  contentEl.innerHTML = `
+    <div class="card">
+      ${state.saved!==false ? `<div class="status-banner">✓ Результат отправлен преподавателю</div>` : `<div class="status-banner" style="background:#F6E7E6;color:var(--bad);">Не удалось сохранить результат — покажи этот экран преподавателю</div>`}
+      <div class="level-hero">
+        <div class="level-letter">${level}</div>
+      </div>
+      <p class="level-desc">${LEVEL_DESC[level]}</p>
+      <div class="score-row">${state.name} · ${correctCount} из ${state.answers.length} правильно</div>
+      <div class="muted" style="margin-bottom:6px;">По уровням:</div>
+      <div style="margin-bottom:24px;">${breakdownRows}</div>
+      ${mistakes.length ? `<div><div class="muted" style="margin-bottom:4px;">Разбор ошибок:</div>` + mistakes.map(m=>`
+        <div class="mistake">
+          <div class="q">${m.q.q}</div>
+          <div class="row">Твой ответ: <span class="wrong">${m.q.opts[m.chosenIdx]}</span></div>
+          <div class="row">Правильно: <span class="right">${m.q.opts[m.q.a]}</span></div>
+          <div class="explain">${m.q.exp}</div>
+        </div>
+      `).join("") + `</div>` : `<p>Все ответы верные — отличный результат!</p>`}
+    </div>
+  `;
+}
+
+async function renderAdmin(){
+  contentEl.innerHTML = `<div class="card"><p class="muted">Загрузка результатов…</p></div>`;
+  try{
+    const list = await window.storage.list("result:", true);
+    const keys = list && list.keys ? list.keys : [];
+    const records = [];
+    for(const k of keys){
+      try{
+        const r = await window.storage.get(k, true);
+        if(r && r.value) records.push({key:k, ...JSON.parse(r.value)});
+      }catch(e){}
+    }
+    records.sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+    contentEl.innerHTML = `
+      <div class="card">
+        <h1 style="font-size:22px;">Результаты студентов</h1>
+        <p class="muted">${records.length} прохожден${records.length===1?'ие':'ий'}</p>
+        <table>
+          <thead><tr><th>Имя</th><th>Email</th><th>Уровень</th><th>Баллы</th><th>Дата</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    `;
+    const rows = document.getElementById("rows");
+    if(records.length===0){
+      rows.innerHTML = `<tr><td colspan="6" class="muted">Пока никто не прошёл тест.</td></tr>`;
+    }
+    records.forEach(r=>{
+      const tr = document.createElement("tr");
+      const d = new Date(r.timestamp);
+      tr.innerHTML = `
+        <td>${r.name||"—"}</td>
+        <td>${r.email||"—"}</td>
+        <td><span class="pill">${r.level||"—"}</span></td>
+        <td>${r.score||"—"}</td>
+        <td>${d.toLocaleDateString("ru-RU")} ${d.toLocaleTimeString("ru-RU",{hour:'2-digit',minute:'2-digit'})}</td>
+        <td><button class="del-btn" title="Удалить">×</button></td>
+      `;
+      tr.querySelector(".del-btn").onclick = async ()=>{
+        try{ await window.storage.delete(r.key, true); tr.remove(); }catch(e){ console.error(e); }
+      };
+      rows.appendChild(tr);
+    });
+  }catch(e){
+    contentEl.innerHTML = `<div class="card"><p>Не удалось загрузить результаты.</p></div>`;
+    console.error(e);
+  }
+}
+
+function render(){
+  renderLadder();
+  if(state.screen==="start") renderStart();
+  else if(state.screen==="quiz") renderQuiz();
+  else if(state.screen==="result") renderResult();
+  else if(state.screen==="admin") renderAdmin();
+}
+
+/* admin gate via ?admin=alexeyzur */
+const params = new URLSearchParams(window.location.search);
+if(params.get("admin") === "alexeyzur"){
+  state.screen = "admin";
+}
+render();
+</script>
+
+
+</body></html>
