@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///D:/Documents/Downloads/english_level_test_1.html -->
-<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>English Level Check — @alexeyzur</title>
-<link rel="preconnect" href="https://fonts.googleapis.com/">
-<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-<link href="./index_files/css2" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#171717;
@@ -258,21 +258,8 @@
 </div>
 
 <div class="app">
-  <div class="ladder" id="ladder"><div class="rung"><span class="dot"></span>C2</div><div class="rung"><span class="dot"></span>C1</div><div class="rung"><span class="dot"></span>B2</div><div class="rung"><span class="dot"></span>B1</div><div class="rung"><span class="dot"></span>A2</div><div class="rung"><span class="dot"></span>A1</div></div>
-  <div id="content">
-    <div class="card">
-      <h1>English Level Check</h1>
-      <p>Тест на грамматику, лексику, фразовые глаголы, предлоги и идиомы — от A1 до C2, 40 вопросов, 10–12 минут. Вопросы идут по порядку — от простых к сложным.</p>
-      <p class="muted">Результат виден только твоему преподавателю.</p>
-      <label for="nameInput">Имя</label>
-      <input type="text" id="nameInput" placeholder="Как тебя зовут?">
-      <label for="emailInput">Email</label>
-      <input type="email" id="emailInput" placeholder="you@example.com">
-      <div style="margin-top:22px;">
-        <button class="btn-primary" id="startBtn">Начать тест</button>
-      </div>
-    </div>
-  </div>
+  <div class="ladder" id="ladder"></div>
+  <div id="content"></div>
 </div>
 
 <script>
@@ -520,22 +507,29 @@ async function finishQuiz(){
   state.perLevel = perLevel;
   state.screen = "result";
   render();
-  // save to shared storage for teacher dashboard
+  // send to Google Form -> lands in the linked Google Sheet
   try{
     const correctCount = state.answers.filter(a=>a.correct).length;
-    const record = {
-      name: state.name,
-      email: state.email,
-      level: final,
-      score: `${correctCount}/${state.answers.length}`,
-      perLevel,
-      timestamp: new Date().toISOString(),
-      mistakes: state.answers.filter(a=>!a.correct).map(a=>({
-        q:a.q.q, chosen:a.q.opts[a.chosenIdx], correct:a.q.opts[a.q.a]
-      }))
-    };
-    const key = `result:${Date.now()}_${state.email.replace(/[^a-zA-Z0-9]/g,"")}`;
-    await window.storage.set(key, JSON.stringify(record), true);
+    const perLevelStr = LEVELS.map(lvl=>`${lvl}:${perLevel[lvl].correct}/${perLevel[lvl].total}`).join(", ");
+    const scoreStr = `${correctCount}/${state.answers.length} (${perLevelStr})`;
+    const mistakesStr = state.answers.filter(a=>!a.correct).map(a=>
+      `${a.q.q} | твой ответ: ${a.q.opts[a.chosenIdx]} | правильно: ${a.q.opts[a.q.a]}`
+    ).join("\n") || "нет ошибок";
+
+    const FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSeEo10z4y6u4LLXHv8rMYf5d50xxy7bdDqI-zmzHKPMkGB5SQ/formResponse";
+    const body = new URLSearchParams({
+      "entry.1021796831": state.name,
+      "entry.259767975": state.email,
+      "entry.430792561": final,
+      "entry.1584588141": scoreStr,
+      "entry.1440689801": mistakesStr
+    });
+    await fetch(FORM_ACTION, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {"Content-Type": "application/x-www-form-urlencoded"},
+      body
+    });
     state.saved = true;
   }catch(e){
     state.saved = false;
@@ -579,53 +573,14 @@ function renderResult(){
   `;
 }
 
-async function renderAdmin(){
-  contentEl.innerHTML = `<div class="card"><p class="muted">Загрузка результатов…</p></div>`;
-  try{
-    const list = await window.storage.list("result:", true);
-    const keys = list && list.keys ? list.keys : [];
-    const records = [];
-    for(const k of keys){
-      try{
-        const r = await window.storage.get(k, true);
-        if(r && r.value) records.push({key:k, ...JSON.parse(r.value)});
-      }catch(e){}
-    }
-    records.sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
-    contentEl.innerHTML = `
-      <div class="card">
-        <h1 style="font-size:22px;">Результаты студентов</h1>
-        <p class="muted">${records.length} прохожден${records.length===1?'ие':'ий'}</p>
-        <table>
-          <thead><tr><th>Имя</th><th>Email</th><th>Уровень</th><th>Баллы</th><th>Дата</th><th></th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
-    `;
-    const rows = document.getElementById("rows");
-    if(records.length===0){
-      rows.innerHTML = `<tr><td colspan="6" class="muted">Пока никто не прошёл тест.</td></tr>`;
-    }
-    records.forEach(r=>{
-      const tr = document.createElement("tr");
-      const d = new Date(r.timestamp);
-      tr.innerHTML = `
-        <td>${r.name||"—"}</td>
-        <td>${r.email||"—"}</td>
-        <td><span class="pill">${r.level||"—"}</span></td>
-        <td>${r.score||"—"}</td>
-        <td>${d.toLocaleDateString("ru-RU")} ${d.toLocaleTimeString("ru-RU",{hour:'2-digit',minute:'2-digit'})}</td>
-        <td><button class="del-btn" title="Удалить">×</button></td>
-      `;
-      tr.querySelector(".del-btn").onclick = async ()=>{
-        try{ await window.storage.delete(r.key, true); tr.remove(); }catch(e){ console.error(e); }
-      };
-      rows.appendChild(tr);
-    });
-  }catch(e){
-    contentEl.innerHTML = `<div class="card"><p>Не удалось загрузить результаты.</p></div>`;
-    console.error(e);
-  }
+function renderAdmin(){
+  contentEl.innerHTML = `
+    <div class="card">
+      <h1 style="font-size:22px;">Результаты студентов</h1>
+      <p>Все прохождения теперь сохраняются в твою Google Таблицу, привязанную к форме результатов — открой её на Google Диске (файл называется примерно "Новая форма (Ответы)"), там будет строка на каждого студента: имя, email, уровень, баллы и разбор ошибок.</p>
+      <p class="muted">Эта страница — просто заглушка-напоминание, отдельного просмотра здесь больше нет.</p>
+    </div>
+  `;
 }
 
 function render(){
@@ -643,6 +598,5 @@ if(params.get("admin") === "alexeyzur"){
 }
 render();
 </script>
-
-
-</body></html>
+</body>
+</html>
