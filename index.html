@@ -479,6 +479,66 @@ function renderQuiz(){
   };
 }
 
+const FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSeEo10z4y6u4LLXHv8rMYf5d50xxy7bdDqI-zmzHKPMkGB5SQ/formResponse";
+const QUEUE_KEY = "elt_pending_results";
+
+function buildBody(record){
+  return new URLSearchParams({
+    "entry.1021796831": record.name,
+    "entry.259767975": record.email,
+    "entry.430792561": record.level,
+    "entry.1584588141": record.score,
+    "entry.1440689801": record.mistakes
+  });
+}
+
+// Try sendBeacon first (survives tab close / app switch — best for "fire and forget on finish").
+// Falls back to fetch with a couple of retries. Returns true if we're reasonably confident it was sent.
+async function trySend(record){
+  const body = buildBody(record);
+  if(navigator.sendBeacon){
+    try{
+      const blob = new Blob([body.toString()], {type:"application/x-www-form-urlencoded"});
+      const ok = navigator.sendBeacon(FORM_ACTION, blob);
+      if(ok) return true;
+    }catch(e){ /* fall through to fetch */ }
+  }
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      await fetch(FORM_ACTION, {
+        method:"POST", mode:"no-cors",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body: buildBody(record)
+      });
+      return true;
+    }catch(e){
+      await new Promise(r=>setTimeout(r, 800*(attempt+1)));
+    }
+  }
+  return false;
+}
+
+function queueForLater(record){
+  try{
+    const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
+    q.push(record);
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+  }catch(e){ /* localStorage unavailable, nothing more we can do */ }
+}
+
+// Runs on every page load: silently retries any results that failed to send last time.
+async function flushQueue(){
+  let q = [];
+  try{ q = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); }catch(e){ return; }
+  if(!q.length) return;
+  const stillFailed = [];
+  for(const record of q){
+    const ok = await trySend(record);
+    if(!ok) stillFailed.push(record);
+  }
+  try{ localStorage.setItem(QUEUE_KEY, JSON.stringify(stillFailed)); }catch(e){}
+}
+
 // Walk level-by-level from A1; a level "passes" at >=60% correct.
 // Final level = highest consecutively-passed level, starting from the bottom.
 function computeFinalLevel(){
@@ -507,34 +567,19 @@ async function finishQuiz(){
   state.perLevel = perLevel;
   state.screen = "result";
   render();
-  // send to Google Form -> lands in the linked Google Sheet
-  try{
-    const correctCount = state.answers.filter(a=>a.correct).length;
-    const perLevelStr = LEVELS.map(lvl=>`${lvl}:${perLevel[lvl].correct}/${perLevel[lvl].total}`).join(", ");
-    const scoreStr = `${correctCount}/${state.answers.length} (${perLevelStr})`;
-    const mistakesStr = state.answers.filter(a=>!a.correct).map(a=>
-      `${a.q.q} | твой ответ: ${a.q.opts[a.chosenIdx]} | правильно: ${a.q.opts[a.q.a]}`
-    ).join("\n") || "нет ошибок";
 
-    const FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSeEo10z4y6u4LLXHv8rMYf5d50xxy7bdDqI-zmzHKPMkGB5SQ/formResponse";
-    const body = new URLSearchParams({
-      "entry.1021796831": state.name,
-      "entry.259767975": state.email,
-      "entry.430792561": final,
-      "entry.1584588141": scoreStr,
-      "entry.1440689801": mistakesStr
-    });
-    await fetch(FORM_ACTION, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
-      body
-    });
-    state.saved = true;
-  }catch(e){
-    state.saved = false;
-    console.error("Save error:", e);
-  }
+  const correctCount = state.answers.filter(a=>a.correct).length;
+  const perLevelStr = LEVELS.map(lvl=>`${lvl}:${perLevel[lvl].correct}/${perLevel[lvl].total}`).join(", ");
+  const scoreStr = `${correctCount}/${state.answers.length} (${perLevelStr})`;
+  const mistakesStr = state.answers.filter(a=>!a.correct).map(a=>
+    `${a.q.q} | твой ответ: ${a.q.opts[a.chosenIdx]} | правильно: ${a.q.opts[a.q.a]}`
+  ).join("\n") || "нет ошибок";
+
+  const record = {name: state.name, email: state.email, level: final, score: scoreStr, mistakes: mistakesStr};
+
+  const ok = await trySend(record);
+  if(!ok) queueForLater(record); // will be silently retried on this student's next visit
+  state.saved = ok;
   render();
 }
 
@@ -553,7 +598,7 @@ function renderResult(){
   }).join("");
   contentEl.innerHTML = `
     <div class="card">
-      ${state.saved!==false ? `<div class="status-banner">✓ Результат отправлен преподавателю</div>` : `<div class="status-banner" style="background:#F6E7E6;color:var(--bad);">Не удалось сохранить результат — покажи этот экран преподавателю</div>`}
+      ${state.saved!==false ? `<div class="status-banner">✓ Результат отправлен преподавателю</div>` : `<div class="status-banner" style="background:#F6E7E6;color:var(--bad);">Не получилось отправить сразу — попробуем ещё раз, когда вернёшься на эту страницу. На всякий случай сделай скриншот этого экрана.</div>`}
       <div class="level-hero">
         <div class="level-letter">${level}</div>
       </div>
@@ -596,6 +641,7 @@ const params = new URLSearchParams(window.location.search);
 if(params.get("admin") === "alexeyzur"){
   state.screen = "admin";
 }
+flushQueue();
 render();
 </script>
 </body>
