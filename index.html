@@ -487,13 +487,21 @@ const QUEUE_KEY = "elt_pending_results";
 // internal redirect that often blocks CORS), so we send with mode:"no-cors" — the request
 // still reaches the server and executes. We only retry/queue on a genuine network failure
 // (fetch throwing), not on "can't read the response", to avoid writing duplicate rows.
+// GET request with data in the query string — Apps Script's web app URL issues an
+// internal redirect on every call, and cross-origin POST bodies can get dropped when
+// the browser follows that redirect. A GET request has no body to lose, so it survives.
 async function trySend(record){
   try{
-    await fetch(SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {"Content-Type": "text/plain;charset=utf-8"},
-      body: JSON.stringify(record)
+    const qs = new URLSearchParams({
+      name: record.name,
+      email: record.email,
+      level: record.level,
+      score: record.score,
+      mistakes: record.mistakes
+    });
+    await fetch(`${SCRIPT_URL}?${qs.toString()}`, {
+      method: "GET",
+      mode: "no-cors"
     });
     return true;
   }catch(e){
