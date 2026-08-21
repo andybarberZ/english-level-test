@@ -339,7 +339,8 @@ let state = {
   testOrder: [],  // fixed 30-question sequence, simple to complex
   answers: [],    // {q, chosenIdx, correct}
   qIndex: 0,
-  selectedOpt: null
+  selectedOpt: null,
+  saved: null
 };
 
 const contentEl = document.getElementById("content");
@@ -432,6 +433,7 @@ function renderStart(){
     state.testOrder = generateTest();
     state.qIndex = 0;
     state.answers = [];
+    state.saved = null;
     state.screen = "quiz";
     nextQuestion();
   };
@@ -536,6 +538,7 @@ async function flushQueue(){
 // Final level = highest consecutively-passed level, starting from the bottom.
 function computeFinalLevel(){
   let final = "A1";
+  let climbing = true;
   const perLevel = {};
   for(let i=0;i<LEVELS.length;i++){
     const lvl = LEVELS[i];
@@ -545,10 +548,12 @@ function computeFinalLevel(){
     const correct = slice.filter(a=>a.correct).length;
     const acc = slice.length ? correct/slice.length : 0;
     perLevel[lvl] = {correct, total: slice.length, acc};
-    if(acc >= 0.6){
-      final = lvl;
-    } else {
-      break; // stop climbing further once a level isn't passed
+    if(climbing){
+      if(acc >= 0.6){
+        final = lvl;
+      } else {
+        climbing = false; // stop advancing the final level, but keep scoring every level below —
+      }                    // all 40 questions were answered regardless of pass/fail per level.
     }
   }
   return {final, perLevel};
@@ -561,17 +566,22 @@ async function finishQuiz(){
   state.screen = "result";
   render();
 
-  const correctCount = state.answers.filter(a=>a.correct).length;
-  const perLevelStr = LEVELS.map(lvl=>`${lvl}:${perLevel[lvl].correct}/${perLevel[lvl].total}`).join(", ");
-  const scoreStr = `${correctCount}/${state.answers.length} (${perLevelStr})`;
-  const mistakesStr = state.answers.filter(a=>!a.correct).map(a=>
-    `${a.q.q} | твой ответ: ${a.q.opts[a.chosenIdx]} | правильно: ${a.q.opts[a.q.a]}`
-  ).join("\n") || "нет ошибок";
+  let ok = false;
+  try{
+    const correctCount = state.answers.filter(a=>a.correct).length;
+    const perLevelStr = LEVELS.map(lvl=>`${lvl}:${perLevel[lvl].correct}/${perLevel[lvl].total}`).join(", ");
+    const scoreStr = `${correctCount}/${state.answers.length} (${perLevelStr})`;
+    const mistakesStr = state.answers.filter(a=>!a.correct).map(a=>
+      `${a.q.q} | твой ответ: ${a.q.opts[a.chosenIdx]} | правильно: ${a.q.opts[a.q.a]}`
+    ).join("\n") || "нет ошибок";
 
-  const record = {name: state.name, email: state.email, level: final, score: scoreStr, mistakes: mistakesStr};
-
-  const ok = await trySend(record);
-  if(!ok) queueForLater(record); // will be silently retried on this student's next visit
+    const record = {name: state.name, email: state.email, level: final, score: scoreStr, mistakes: mistakesStr};
+    ok = await trySend(record);
+    if(!ok) queueForLater(record); // will be silently retried on this student's next visit
+  }catch(e){
+    console.error("finishQuiz error:", e);
+    ok = false;
+  }
   state.saved = ok;
   render();
 }
