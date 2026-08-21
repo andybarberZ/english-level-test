@@ -479,86 +479,29 @@ function renderQuiz(){
   };
 }
 
-const FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSeEo10z4y6u4LLXHv8rMYf5d50xxy7bdDqI-zmzHKPMkGB5SQ/formResponse";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzO86NwiAZ5bxGQRlf7hlnX0RwNGyuFjTrg607dRqVxE2BaIf5I47VOi7gds9oBsLhB/exec";
 const QUEUE_KEY = "elt_pending_results";
 
-function buildBody(record){
-  return new URLSearchParams({
-    "entry.1021796831": record.name,
-    "entry.259767975": record.email,
-    "entry.430792561": record.level,
-    "entry.1584588141": record.score,
-    "entry.1440689801": record.mistakes
-  });
-}
-
-// Try sendBeacon first (survives tab close / app switch — best for "fire and forget on finish").
-// Falls back to fetch with a couple of retries. Returns true if we're reasonably confident it was sent.
-// Hidden iframe + real <form> POST — mimics an actual browser form submission
-// (proper navigation, not a background XHR), which Google Forms and ad-blockers
-// are much less likely to reject than a bare fetch/sendBeacon call.
-let hiddenIframe = null;
-function getHiddenIframe(){
-  if(!hiddenIframe){
-    hiddenIframe = document.createElement("iframe");
-    hiddenIframe.name = "elt_hidden_target";
-    hiddenIframe.style.display = "none";
-    document.body.appendChild(hiddenIframe);
-  }
-  return hiddenIframe;
-}
-
-function sendViaHiddenForm(record){
+// Sends the result to the Apps Script endpoint, which writes a row directly into the sheet.
+// Apps Script's response can't reliably be read back through fetch (it responds via an
+// internal redirect that often blocks CORS), so we send with mode:"no-cors" — the request
+// still reaches the server and executes. We only retry/queue on a genuine network failure
+// (fetch throwing), not on "can't read the response", to avoid writing duplicate rows.
+async function trySend(record){
   try{
-    getHiddenIframe();
-    const form = document.createElement("form");
-    form.action = FORM_ACTION;
-    form.method = "POST";
-    form.target = "elt_hidden_target";
-    form.style.display = "none";
-    const fields = {
-      "entry.1021796831": record.name,
-      "entry.259767975": record.email,
-      "entry.430792561": record.level,
-      "entry.1584588141": record.score,
-      "entry.1440689801": record.mistakes
-    };
-    Object.entries(fields).forEach(([k,v])=>{
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = k;
-      input.value = v;
-      form.appendChild(input);
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify(record)
     });
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(()=>form.remove(), 3000);
     return true;
   }catch(e){
     return false;
   }
 }
 
-// Fires two independent delivery mechanisms in parallel for redundancy —
-// a stray extra row in the sheet is a minor inconvenience, a lost result isn't.
-async function trySend(record){
-  const viaForm = sendViaHiddenForm(record);
-  let viaFetch = false;
-  for(let attempt=0; attempt<3; attempt++){
-    try{
-      await fetch(FORM_ACTION, {
-        method:"POST", mode:"no-cors",
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body: buildBody(record)
-      });
-      viaFetch = true;
-      break;
-    }catch(e){
-      await new Promise(r=>setTimeout(r, 800*(attempt+1)));
-    }
-  }
-  return viaForm || viaFetch;
-}
+
 
 function queueForLater(record){
   try{
