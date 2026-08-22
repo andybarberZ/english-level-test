@@ -493,22 +493,31 @@ const QUEUE_KEY = "elt_pending_results";
 // internal redirect on every call, and cross-origin POST bodies can get dropped when
 // the browser follows that redirect. A GET request has no body to lose, so it survives.
 async function trySend(record){
-  try{
-    const qs = new URLSearchParams({
-      name: record.name,
-      email: record.email,
-      level: record.level,
-      score: record.score,
-      mistakes: record.mistakes
-    });
-    await fetch(`${SCRIPT_URL}?${qs.toString()}`, {
-      method: "GET",
-      mode: "no-cors"
-    });
-    return true;
-  }catch(e){
-    return false;
+  const url = `${SCRIPT_URL}?${new URLSearchParams({
+    name: record.name,
+    email: record.email,
+    level: record.level,
+    score: record.score,
+    mistakes: record.mistakes
+  }).toString()}`;
+
+  // Attempt 1-3: real request where we can read the response and get genuine confirmation.
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      const res = await fetch(url); // default mode "cors" — GET responses from Apps Script are usually readable
+      if(res.ok){
+        const data = await res.json();
+        if(data && data.status === "ok") return true;
+      }
+    }catch(e){ /* likely blocked by CORS or network — retry, then fall back below */ }
+    if(attempt < 2) await new Promise(r=>setTimeout(r, 700*(attempt+1)));
   }
+
+  // Last resort: fire-and-forget, unverifiable, but better than nothing.
+  try{
+    await fetch(url, {method:"GET", mode:"no-cors"});
+  }catch(e){ /* ignore */ }
+  return false; // couldn't confirm — caller will still queue this for retry
 }
 
 
