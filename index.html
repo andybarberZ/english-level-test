@@ -546,8 +546,6 @@ async function flushQueue(){
 // Walk level-by-level from A1; a level "passes" at >=60% correct.
 // Final level = highest consecutively-passed level, starting from the bottom.
 function computeFinalLevel(){
-  let final = "A1";
-  let climbing = true;
   const perLevel = {};
   for(let i=0;i<LEVELS.length;i++){
     const lvl = LEVELS[i];
@@ -557,13 +555,23 @@ function computeFinalLevel(){
     const correct = slice.filter(a=>a.correct).length;
     const acc = slice.length ? correct/slice.length : 0;
     perLevel[lvl] = {correct, total: slice.length, acc};
-    if(climbing){
-      if(acc >= 0.6){
-        final = lvl;
-      } else {
-        climbing = false; // stop advancing the final level, but keep scoring every level below —
-      }                    // all 40 questions were answered regardless of pass/fail per level.
+  }
+  // Highest level L that itself clears 60%, allowing at most one softer dip
+  // (40-59%) somewhere below it — a single rough patch doesn't cap an
+  // otherwise consistent result, but a genuine gap (below 40%, or more than
+  // one weak level) does.
+  let final = "A1";
+  for(let i=0;i<LEVELS.length;i++){
+    const lvl = LEVELS[i];
+    if(perLevel[lvl].acc < 0.6) continue;
+    let dips = 0;
+    let hardFail = false;
+    for(let j=0;j<i;j++){
+      const a = perLevel[LEVELS[j]].acc;
+      if(a < 0.4) hardFail = true;
+      else if(a < 0.6) dips++;
     }
+    if(!hardFail && dips <= 1) final = lvl;
   }
   return {final, perLevel};
 }
